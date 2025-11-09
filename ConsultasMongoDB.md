@@ -53,3 +53,49 @@ Usuarios en Colombia o Poloniaa”
 db.Usuarios.find({ $or: [ { Country: "Colombia" }, { Country: "Poland" } ] })
 
 ```
+## 3️⃣ Consultas de agregación para calcular estadísticas 
+### - Contar
+Contar usuarios por país
+```python
+db.Usuarios.aggregate([
+  { $group: { _id: "$Country", total: { $sum: 1 } } }
+])
+```
+Contar mujeres por ciudad
+```python
+db.users.aggregate([
+  { $match: { Gender: "Female" } },
+  { $group: { _id: "$City", totalMujeres: { $sum: 1 } } }
+])
+```
+### - Sumar
+Ciudad con mayor número de intereses asociados (suma general)
+```python
+db.Usuarios.aggregate([
+  { $unwind:"$Interests" },
+  { $group:{ _id:"$City", totalIntereses:{ $sum:1 } } },
+  { $sort:{ totalIntereses:-1 } },
+  { $limit:5 }
+])
+```
+Suma total de usuarios agrupados por país pero solo de los países que tienen más de 500 usuarios.
+```python
+db.Usuarios.aggregate([
+  { $group: { _id:"$Country", totalUsuarios:{ $sum:1 } } },
+  { $match: { totalUsuarios: { $gt:500 } } },
+  { $sort: { totalUsuarios:-1 } }
+])
+```
+### - Promediar
+Promedio de edad por país
+```python
+db.Usuarios.aggregate([
+  {$addFields: {edad: {$dateDiff: {startDate: "$DOB",endDate: "$$NOW",unit: "year"  }}}  },
+  { $group: {_id: "$Country",promedioEdad: { $avg: "$edad" }}}])
+```
+Usuarios con edad entre 20 y 30 años
+```python
+db.Usuarios.aggregate([
+  { $addFields:{ edad: { $subtract:[ { $year:new Date() }, { $year:"$DOB" } ] } } },
+  { $match:{ edad:{ $gte:20, $lte:30 } } }
+```
